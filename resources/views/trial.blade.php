@@ -1,12 +1,9 @@
 @extends('template')
 
 @push('heads')
-    {{-- <script src="{{ asset('js/opencv.js') }}" type="text/javascript" async onload="cvReady()"></script> --}}
     <script async src="https://docs.opencv.org/3.4.15/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
-
-    {{-- <script src="{{ asset('js/tesseract/Tesseract.js') }}"></script> --}}
-    {{-- <script src="{{ asset('js/tesseract.min.js') }}"></script> --}}
-    {{-- <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script> --}}
+    <script src="https://cdn.rawgit.com/naptha/tesseract.js/1.0.10/dist/tesseract.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 @endpush
 @section('content')
     <div class="header bg-default pb-6">
@@ -76,7 +73,12 @@
                                             oninput="threshRange()" min="0" max="255">
                                     </div>
                                 </div>
-                                <div class="col">
+                                <div class="col d-flex align-items-center">
+                                    <select name="type" id="" onchange="changeType()" class="form-control">
+                                        <option value="Pilih">Pilih</option>
+                                        <option value="Air">Air</option>
+                                        <option value="Listrik">Listrik</option>
+                                    </select>
                                     <button class="btn btn-success" onclick="saveConfig()">Save Config</button>
                                 </div>
                             </div>
@@ -109,7 +111,7 @@
                             <img id="bitmap-image" src="#" style="display: none;">
                         </div>
 
-                        <form action="" method="POST" enctype="multipart/form-data">
+                        <form action="{{ route('detector.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <div class="form-group">
                                 <label class="form-control-label" for="meteran_value">Nilai Meteran</label>
@@ -128,9 +130,9 @@
                                 <label class="form-control-label" for="units_id">No Unit</label>
                                 <select name="units_id" id="" class="form-control" required>
                                     <option value="-">Choose</option>
-                                    {{-- @foreach ($units as $unit)
-                                    <option value="{{ $unit->id }}">{{ $unit->name }}</option>
-                                @endforeach --}}
+                                    @foreach ($units as $unit)
+                                        <option value="{{ $unit->id }}">{{ $unit->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="form-group">
@@ -157,40 +159,66 @@
         let valMin = 0;
         let valMax = 255;
 
-        function saveConfig() {
-            const data = [{
-                    name: "hueMin",
-                    value: hueMin
-                },
-                {
-                    name: "hueMax",
-                    value: hueMax
-                },
-                {
-                    name: "satMin",
-                    value: satMin
-                },
-                {
-                    name: "satMax",
-                    value: satMax
-                },
-                {
-                    name: "valMin",
-                    value: valMin
-                },
-                {
-                    name: "valMax",
-                    value: valMax
+        function changeType() {
+            const type = document.querySelector('select[name="type"]').value;
+            $.ajax({
+                url: '/get/config/' + type,
+                type: 'GET',
+                success: function(data) {
+                    console.log(data);
+                    hueMin = data.hueMin;
+                    hueMax = data.hueMax;
+                    satMin = data.satMin;
+                    satMax = data.satMax;
+                    valMin = data.valMin;
+                    valMax = data.valMax;
+
+                    hueMin = parseInt(hueMin);
+                    hueMax = parseInt(hueMax);
+                    satMin = parseInt(satMin);
+                    satMax = parseInt(satMax);
+                    valMin = parseInt(valMin);
+                    valMax = parseInt(valMax);
+
+                    // put the value to the slider
+                    document.getElementById('hueMinus').value = hueMin;
+                    document.getElementById('huePlus').value = hueMax;
+                    document.getElementById('saturationMinus').value = satMin;
+                    document.getElementById('saturationPlus').value = satMax;
+                    document.getElementById('valueMinus').value = valMin;
+                    document.getElementById('valuePlus').value = valMax;
+                    console.log(hueMin, hueMax, satMin, satMax, valMin, valMax);
                 }
-            ];
-
-            const yamlStr = yaml.dump(data);
-
-            const blob = new Blob([yamlStr], {
-                type: "text/plain;charset=utf-8"
             });
-            saveAs(blob, "config.yaml");
-            console.log(yamlStr);
+        }
+
+        function saveConfig() {
+            const type = document.querySelector('select[name="type"]').value;
+
+            $.ajax({
+                url: '/save/config/' + type,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    hueMin: hueMin,
+                    hueMax: hueMax,
+                    satMin: satMin,
+                    satMax: satMax,
+                    valMin: valMin,
+                    valMax: valMax,
+                },
+                success: function(data) {
+                    console.log(data);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Config has been saved',
+                    });
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+            });
         }
 
         function onOpenCvReady() {
@@ -365,44 +393,28 @@
                 context.putImageData(maskImageData, 0, 0);
                 let imgBuffer = canvas.toDataURL('image/png');
                 console.log(imgBuffer);
+                try {
+                    Tesseract.recognize(imgBuffer, 'eng', {
+                        logger: m => console.log(m)
+                    }).then((data) => {
+                        console.log(data.text);
+                        // get the recognized data.text that only contains numbers
+                        let numbers = data.text.match(/\d+/g).map(Number);
+                        Swal.fire({
+                            title: 'Your number is',
+                            text: numbers[0],
+                            icon: 'success',
+                            confirmButtonText: 'Cool'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                inputMeteran.value = numbers[0];
 
-                Tesseract.recognize(imgBuffer, 'eng', {
-                    logger: m => console.log(m)
-                }).then(({
-                    data: {
-                        text
-                    }
-                }) => {
-                    // get the recognized text that only contains numbers
-                    let numbers = text.match(/\d+/g).map(Number);
-                    console.log(numbers);
-                })
-
-
-
-                // Create a Tesseract.js instance
-                // const worker = Tesseract.createWorker({
-                //     logger: m => console.log(m)
-                // });
-
-                // // get the recognized text
-                // await worker.load();
-                // await worker.loadLanguage('eng');
-                // await worker.initialize('eng');
-                // const {
-                //     data: {
-                //         text
-                //     }
-                // } = await worker.recognize(imgBuffer);
-                // await worker.terminate();
-                // console.log(text);
-                // Display the recognized text
-                // console.log(text);
-
-
-                // Display the thresholded image
-
-                // Delete the old Mat objects
+                            }
+                        })
+                    });
+                } catch (err) {
+                    console.log(err);
+                }
                 srcMat.delete();
                 hsvMat.delete();
                 mask.delete();

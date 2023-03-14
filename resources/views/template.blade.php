@@ -14,9 +14,15 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
     <link rel="stylesheet" href="/assets/vendor/@fortawesome/fontawesome-free/css/all.min.css" type="text/css">
+    <link rel="stylesheet" href="/assets/vendor/@fortawesome/fontawesome-free/css/all.min.css" type="text/css">
     <link rel="stylesheet" href="/assets/css/argon.css?v=1.2.0" type="text/css">
     <script src="/assets/vendor/jquery/dist/jquery.min.js"></script>
+    {{-- <script src="/assets/vendor/jquery/dist/jquery.min.js"></script> --}}
     <script src="/assets/vendor/datatables/jquery.dataTables.min.js"></script>
+    {{-- <link href="https://cdn.datatables.net/v/bs4/dt-1.13.2/b-2.3.4/datatables.min.css" />
+    
+    <script src="https://cdn.datatables.net/v/bs4/dt-1.13.2/b-2.3.4/datatables.min.js"></script> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('css/app.css') }}"> --}}
     <script src="{{ asset('js/app.js') }}"></script>
 
 
@@ -61,10 +67,19 @@
                         <!-- Divider -->
                         <hr class="my-2">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url('/meteran-table') }}"
+                            <a class="nav-link" href="{{ url('/meteran') }}"
                                 style="font-size: 18px; text-align: center">
                                 <i class="fas fa-table" style="font-size: 16px;"></i>
-                                <span class="nav-link-text ml-2">Tabel</span>
+                                <span class="nav-link-text ml-2">Meteran</span>
+                            </a>
+                        </li>
+                        <!-- Divider -->
+                        <hr class="my-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url('/summary-data') }}"
+                                style="font-size: 18px; text-align: center">
+                                <i class="fas fa-table" style="font-size: 16px;"></i>
+                                <span class="nav-link-text ml-2">Summary Datas</span>
                             </a>
                         </li>
                     </ul>
@@ -181,8 +196,6 @@
     </div>
     @stack('scripts')
     <!-- Argon Scripts -->
-    <!-- Core -->
-    <script src="/assets/vendor/jquery/dist/jquery.min.js"></script>
     <script src="/assets/vendor/js-cookie/js.cookie.js"></script>
     <script src="/assets/vendor/jquery.scrollbar/jquery.scrollbar.min.js"></script>
     <script src="/assets/vendor/jquery-scroll-lock/dist/jquery-scrollLock.min.js"></script>
@@ -196,7 +209,6 @@
 
     @yield('script')
 
-    <script src="/assets/vendor/jquery/dist/jquery.min.js"></script>
 </body>
 
 </html>
